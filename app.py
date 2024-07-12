@@ -2,6 +2,7 @@ import streamlit as st
 import boto3
 import json
 import logging
+from botocore.exceptions import EndpointConnectionError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -65,7 +66,7 @@ if st.button("Get Forecast"):
         st.write(f"Ticker: {ticker}")
         st.write(f"Forecast Days: {days}")
         st.write(f"Forecasted Close Price: {result['predicted_value']}")
-    except sagemaker_client.exceptions.EndpointConnectionError as e:
+    except EndpointConnectionError as e:
         st.error("Failed to connect to the SageMaker endpoint.")
         logger.error(f"Failed to connect to the SageMaker endpoint: {e}")
     except Exception as e:
