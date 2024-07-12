@@ -8,7 +8,7 @@ from botocore.exceptions import EndpointConnectionError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Use Streamlit secrets to get AWS credentials
+# Check and log AWS credentials and region
 try:
     aws_access_key_id = st.secrets["AWS_ACCESS_KEY_ID"]
     aws_secret_access_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
