@@ -72,3 +72,4 @@ if st.button("Get Forecast"):
     except Exception as e:
         st.error("An error occurred while making the prediction.")
         logger.error(f"An error occurred while making the prediction: {e}")
+        logger.error(f"Error details: {e}")
