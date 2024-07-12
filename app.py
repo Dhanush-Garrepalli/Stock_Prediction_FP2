@@ -13,6 +13,10 @@ try:
     aws_access_key_id = st.secrets["AWS_ACCESS_KEY_ID"]
     aws_secret_access_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
     region_name = st.secrets["AWS_DEFAULT_REGION"]
+
+    # Log the retrieved secrets (except for the secret access key for security reasons)
+    logger.info(f"Using AWS region: {region_name}")
+    logger.info(f"Using AWS access key ID: {aws_access_key_id}")
 except KeyError as e:
     st.error(f"Missing required secrets: {e}")
     logger.error(f"Missing required secrets: {e}")
@@ -26,6 +30,7 @@ try:
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key
     )
+    logger.info("Successfully initialized the SageMaker client.")
 except Exception as e:
     st.error("Failed to initialize the SageMaker client.")
     logger.error(f"Failed to initialize the SageMaker client: {e}")
@@ -33,6 +38,7 @@ except Exception as e:
 
 # Define the endpoint name
 endpoint_name = 'canvas-FP2-Test-Deployment-2'
+logger.info(f"Using SageMaker endpoint: {endpoint_name}")
 
 # Streamlit UI
 st.title("Stock Forecast")
@@ -49,6 +55,7 @@ features = {
 
 # Convert the payload to JSON format
 payload = json.dumps(features)
+logger.info(f"Payload for prediction: {payload}")
 
 # Make prediction
 if st.button("Get Forecast"):
@@ -61,6 +68,7 @@ if st.button("Get Forecast"):
 
         # Parse the response
         result = json.loads(response['Body'].read().decode())
+        logger.info(f"Prediction result: {result}")
 
         # Display the forecast result
         st.write(f"Ticker: {ticker}")
@@ -72,4 +80,3 @@ if st.button("Get Forecast"):
     except Exception as e:
         st.error("An error occurred while making the prediction.")
         logger.error(f"An error occurred while making the prediction: {e}")
-        logger.error(f"Error details: {e}")
