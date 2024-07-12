@@ -2,7 +2,7 @@ import streamlit as st
 import boto3
 import json
 import logging
-from botocore.exceptions import EndpointConnectionError
+from botocore.exceptions import EndpointConnectionError, ClientError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,6 +77,10 @@ if st.button("Get Forecast"):
     except EndpointConnectionError as e:
         st.error("Failed to connect to the SageMaker endpoint.")
         logger.error(f"Failed to connect to the SageMaker endpoint: {e}")
+    except ClientError as e:
+        error_message = e.response['Error']['Message']
+        st.error(f"ClientError occurred: {error_message}")
+        logger.error(f"ClientError occurred: {e.response['Error']['Message']}")
     except Exception as e:
         st.error("An error occurred while making the prediction.")
         logger.error(f"An error occurred while making the prediction: {e}")
