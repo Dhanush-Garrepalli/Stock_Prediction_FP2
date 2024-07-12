@@ -37,7 +37,7 @@ except Exception as e:
     st.stop()
 
 # Define the endpoint name
-endpoint_name = 'canvas-FP2-Test-Deployment-2'
+endpoint_name = 'canvas-test1'
 logger.info(f"Using SageMaker endpoint: {endpoint_name}")
 
 # Streamlit UI
