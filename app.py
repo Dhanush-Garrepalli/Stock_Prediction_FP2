@@ -81,6 +81,7 @@ if st.button("Get Forecast"):
         error_message = e.response['Error']['Message']
         st.error(f"ClientError occurred: {error_message}")
         logger.error(f"ClientError occurred: {e.response['Error']['Message']}")
+        logger.error(f"Response: {e.response}")
     except Exception as e:
         st.error("An error occurred while making the prediction.")
         logger.error(f"An error occurred while making the prediction: {e}")
