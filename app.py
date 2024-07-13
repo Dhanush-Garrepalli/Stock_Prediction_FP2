@@ -14,20 +14,11 @@ FORECAST_ARN = "arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Foreca
 client = boto3.client('forecastquery', region_name=REGION_NAME)
 
 # Load dataset
-file_path = 'https://github.com/Dhanush-Garrepalli/Stock_Prediction_FP2/blob/main/Group-16_FP2_dataset_final_1.csv'
-
-# Inspect the CSV file
-try:
-    with open(file_path, 'r') as file:
-        sample_data = file.readlines()[:5]
-    st.write('Sample Data from CSV:')
-    st.text(''.join(sample_data))
-except Exception as e:
-    st.error(f"Error reading CSV file: {e}")
+file_url = 'https://raw.githubusercontent.com/Dhanush-Garrepalli/Stock_Prediction_FP2/main/Group-16_FP2_dataset_final_1.csv'
 
 # Read the dataset
 try:
-    dataset = pd.read_csv(file_path)
+    dataset = pd.read_csv(file_url)
     stock_names = dataset['stock_name'].unique()
 except pd.errors.ParserError as e:
     st.error(f"Error parsing CSV file: {e}")
