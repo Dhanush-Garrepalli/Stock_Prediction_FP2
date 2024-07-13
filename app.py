@@ -19,7 +19,7 @@ def filter_weekends(df):
     df = df.drop(columns=['Date'])
     return df
 
-def get_forecast(forecast_arn, item_id):
+def get_forecast(forecast_arn, item_id, date):
     try:
         # Query the forecast
         forecast_response = forecast_query.query_forecast(
@@ -36,6 +36,9 @@ def get_forecast(forecast_arn, item_id):
             df_forecast = pd.DataFrame(forecast_data['p50'])
             # Filter out weekends
             df_forecast = filter_weekends(df_forecast)
+            # Filter the forecast data for the selected date
+            df_forecast['Date'] = pd.to_datetime(df_forecast['Timestamp'])
+            df_forecast = df_forecast[df_forecast['Date'] == pd.to_datetime(date)]
             return df_forecast
         else:
             st.write(f"No predictions found for item_id: {item_id}")
@@ -52,20 +55,19 @@ st.title("Forecast Dashboard")
 
 # Select stock from dropdown
 item_id = st.selectbox("Select Stock Name", stocks)
-forecast_type = st.selectbox("Select Forecast Type", ["Short Term", "Long Term"])
+# Select date from calendar
+selected_date = st.date_input("Select Date")
 
 if st.button("Get Forecast"):
-    if forecast_type == "Short Term":
-        forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
-    else:
-        forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
-    df_forecast = get_forecast(forecast_arn, item_id)
+    # Specify the forecast ARN
+    forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
+    df_forecast = get_forecast(forecast_arn, item_id, selected_date)
     if not df_forecast.empty:
-        st.write(f"{forecast_type} Forecast for {item_id}")
+        st.write(f"Forecast for {item_id} on {selected_date}")
         st.dataframe(df_forecast)
         st.download_button(
             label="Download data as CSV",
             data=df_forecast.to_csv().encode('utf-8'),
-            file_name=f'{forecast_type}_forecast_{item_id}.csv',
+            file_name=f'forecast_{item_id}_{selected_date}.csv',
             mime='text/csv',
         )
