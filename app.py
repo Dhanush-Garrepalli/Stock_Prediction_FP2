@@ -1,32 +1,35 @@
 import streamlit as st
-import requests
+import boto3
+import pandas as pd
 
-# Set your Amazon endpoint URL here
-endpoint_url = "https://runtime.sagemaker.eu-north-1.amazonaws.com/endpoints/canvas-Group16ModelDeployment/invocations"
+# AWS Forecast settings
+REGION_NAME = "ap-south-1"
+FORECAST_ARN = "arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast"
 
-# Streamlit UI
-st.title("Amazon Endpoint Connector")
+# Initialize AWS Forecast client
+client = boto3.client('forecast', region_name=REGION_NAME)
 
-# Text input from the user
-input_text = st.text_area("Enter text to analyze")
+def get_forecast_data(forecast_arn):
+    # Fetch forecast data from AWS
+    response = client.query_forecast(
+        ForecastArn=forecast_arn,
+        Filters={"item_id": "1"}  # Adjust the filter based on your dataset
+    )
+    forecast_data = response['Forecast']['Predictions']
+    
+    # Convert to DataFrame
+    df = pd.DataFrame(forecast_data['p10'], columns=['Timestamp', 'p10'])
+    df['p50'] = [x['Value'] for x in forecast_data['p50']]
+    df['p90'] = [x['Value'] for x in forecast_data['p90']]
+    return df
 
-# Button to submit the input
-if st.button("Submit"):
-    if input_text:
-        # Data to be sent to the endpoint
-        data = {"text": input_text}
+st.title('AWS Forecast Data Viewer')
 
-        # Send a POST request to the endpoint
-        response = requests.post(endpoint_url, json=data)
+# Retrieve forecast data
+data = get_forecast_data(FORECAST_ARN)
 
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Display the response from the endpoint
-            st.write("Response from the endpoint:")
-            st.write(response.json())
-        else:
-            st.write("Error:", response.status_code)
-            st.write(response.text)
-    else:
-        st.write("Please enter some text before submitting.")
+st.write('Forecast Data')
+st.write(data)
 
+# Plot the data
+st.line_chart(data.set_index('Timestamp'))
