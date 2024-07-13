@@ -1,67 +1,81 @@
+import streamlit as st
 import boto3
 import pandas as pd
-import streamlit as st
- 
-# Initialize a session using Amazon Forecast
-session = boto3.Session(
-    aws_access_key_id='AKIAU6GDV7LVBUZHSS5H',
-    aws_secret_access_key='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',
-    region_name='ap-south-1'
-)
- 
-# Create a Forecast client
-forecast = session.client('forecast')
-forecast_query = session.client('forecastquery')
- 
-def filter_weekends(df):
-    df['Date'] = pd.to_datetime(df['Timestamp'])
-    df = df[~df['Date'].dt.dayofweek.isin([5, 6])]
-    df = df.drop(columns=['Date'])
-    return df
- 
-def get_forecast(forecast_arn, item_id):
-    # Query the forecast
-    forecast_response = forecast_query.query_forecast(
-        ForecastArn=forecast_arn,
-        Filters={"item_id": item_id}
-    )
- 
-    # Extract the forecast data
-    forecast_data = forecast_response['Forecast']['Predictions']
- 
-    # Check if 'p50' key exists in the predictions
-    if 'p50' in forecast_data:
-        # Convert to DataFrame
-        df_forecast = pd.DataFrame(forecast_data['p50'])
-        # Filter out weekends
-        df_forecast = filter_weekends(df_forecast)
-        return df_forecast
-    else:
-        st.write(f"No predictions found for item_id: {item_id}")
-        return pd.DataFrame()
- 
-# Streamlit UI
-st.title("Forecast Dashboard")
- 
-item_id = st.text_input("Enter Stock Name", "DHANUKA")
-forecast_type = st.selectbox("Select Forecast Type", ["Short Term", "Long Term"])
- 
-if st.button("Get Forecast"):
-    if forecast_type == "Short Term":
-        forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
-    else:
-        forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
-    df_forecast = get_forecast(forecast_arn, item_id)
-    if not df_forecast.empty:
-        st.write(f"{forecast_type} Forecast for {item_id}")
-        st.dataframe(df_forecast)
-        st.download_button(
-            label="Download data as CSV",
-            data=df_forecast.to_csv().encode('utf-8'),
-            file_name=f'{forecast_type}_forecast_{item_id}.csv',
-            mime='text/csv',
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+
+# AWS Forecast settings
+REGION_NAME = "ap-south-1"
+FORECAST_ARN = "arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast"
+
+# Initialize AWS Forecast client
+client = boto3.client('forecastquery', region_name=REGION_NAME)
+
+# Load dataset
+file_url = 'https://raw.githubusercontent.com/Dhanush-Garrepalli/Stock_Prediction_FP2/main/Group-16_FP2_dataset_final_1.csv'
+
+# Read the dataset
+try:
+    dataset = pd.read_csv(file_url, delimiter=',', on_bad_lines='skip')
+    stock_names = dataset['stock_name'].unique()
+except pd.errors.ParserError as e:
+    st.error(f"Error parsing CSV file: {e}")
+    st.stop()
+except Exception as e:
+    st.error(f"An unexpected error occurred while reading the CSV file: {e}")
+    st.stop()
+
+def get_forecast_data(forecast_arn, item_id):
+    try:
+        # Fetch forecast data from AWS
+        response = client.query_forecast(
+            ForecastArn=forecast_arn,
+            Filters={"item_id": item_id}
         )
- 
-# This part is not needed for Streamlit; you run the app using the command line
-# if __name__ == "__main__":
-#     st.run()
+        logging.debug(f"Response: {response}")
+        forecast_data = response['Forecast']['Predictions']
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(forecast_data['p10'], columns=['Timestamp', 'p10'])
+        df['p50'] = [x['Value'] for x in forecast_data['p50']]
+        df['p90'] = [x['Value'] for x in forecast_data['p90']]
+        return df
+    except client.exceptions.ResourceNotFoundException as e:
+        logging.error(f"Resource not found: {e}")
+        st.error(f"Resource not found: {e}")
+    except client.exceptions.InvalidInputException as e:
+        logging.error(f"Invalid input: {e}")
+        st.error(f"Invalid input: {e}")
+    except client.exceptions.LimitExceededException as e:
+        logging.error(f"Limit exceeded: {e}")
+        st.error(f"Limit exceeded: {e}")
+    except client.exceptions.ResourceInUseException as e:
+        logging.error(f"Resource in use: {e}")
+        st.error(f"Resource in use: {e}")
+    except client.exceptions.ResourceUnavailableException as e:
+        logging.error(f"Resource unavailable: {e}")
+        st.error(f"Resource unavailable: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        st.error(f"Unexpected error: {e}")
+    return pd.DataFrame()
+
+st.title('AWS Forecast Data Viewer')
+
+# Dropdown for selecting stock name (item_id)
+selected_stock = st.selectbox('Select Stock', stock_names)
+
+if selected_stock:
+    # Retrieve forecast data for the selected stock
+    data = get_forecast_data(FORECAST_ARN, selected_stock)
+
+    if not data.empty:
+        st.write(f'Forecast Data for {selected_stock}')
+        st.write(data)
+
+        # Plot the data
+        st.line_chart(data.set_index('Timestamp'))
+    else:
+        st.write('No data available')
