@@ -37,11 +37,13 @@ def get_forecast(forecast_arn, item_id, date):
             # Filter out weekends
             df_forecast = filter_weekends(df_forecast)
             # Filter the forecast data for the selected date
-            df_forecast['Date'] = pd.to_datetime(df_forecast['Timestamp'])
-            df_forecast = df_forecast[df_forecast['Date'] == pd.to_datetime(date)]
+            df_forecast['Date'] = pd.to_datetime(df_forecast['Timestamp']).dt.date
+            df_forecast = df_forecast[df_forecast['Date'] == date]
+            if df_forecast.empty:
+                st.write(f"No predictions available for {item_id} on {date}")
             return df_forecast
         else:
-            st.write(f"No predictions found for item_id: {item_id}")
+            st.write(f"No 'p50' predictions found for item_id: {item_id}")
             return pd.DataFrame()
     except Exception as e:
         st.error(f"Error querying forecast: {e}")
@@ -67,7 +69,7 @@ if st.button("Get Forecast"):
         st.dataframe(df_forecast)
         st.download_button(
             label="Download data as CSV",
-            data=df_forecast.to_csv().encode('utf-8'),
+            data=df_forecast.to_csv(index=False).encode('utf-8'),
             file_name=f'forecast_{item_id}_{selected_date}.csv',
             mime='text/csv',
         )
