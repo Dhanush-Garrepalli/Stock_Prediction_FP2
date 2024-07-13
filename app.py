@@ -18,7 +18,7 @@ file_url = 'https://raw.githubusercontent.com/Dhanush-Garrepalli/Stock_Predictio
 
 # Read the dataset
 try:
-    dataset = pd.read_csv(file_url)
+    dataset = pd.read_csv(file_url, delimiter=',', error_bad_lines=False, warn_bad_lines=True)
     stock_names = dataset['stock_name'].unique()
 except pd.errors.ParserError as e:
     st.error(f"Error parsing CSV file: {e}")
