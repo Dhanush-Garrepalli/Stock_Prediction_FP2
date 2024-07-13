@@ -1,35 +1,59 @@
 import streamlit as st
 import boto3
 import pandas as pd
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
 
 # AWS Forecast settings
 REGION_NAME = "ap-south-1"
 FORECAST_ARN = "arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast"
 
 # Initialize AWS Forecast client
-client = boto3.client('forecast', region_name=REGION_NAME)
+client = boto3.client('forecastquery', region_name=REGION_NAME)
 
-def get_forecast_data(forecast_arn):
-    # Fetch forecast data from AWS
-    response = client.query_forecast(
-        ForecastArn=forecast_arn,
-        Filters={"item_id": "1"}  # Adjust the filter based on your dataset
-    )
-    forecast_data = response['Forecast']['Predictions']
-    
-    # Convert to DataFrame
-    df = pd.DataFrame(forecast_data['p10'], columns=['Timestamp', 'p10'])
-    df['p50'] = [x['Value'] for x in forecast_data['p50']]
-    df['p90'] = [x['Value'] for x in forecast_data['p90']]
-    return df
+# Load dataset
+file_path = '/mnt/data/Group-16_FP2_dataset.csv'
+dataset = pd.read_csv(file_path)
+
+# Extract unique stock names for the dropdown
+stock_names = dataset['stock_name'].unique()
+
+def get_forecast_data(forecast_arn, item_id):
+    try:
+        # Fetch forecast data from AWS
+        response = client.query_forecast(
+            ForecastArn=forecast_arn,
+            Filters={"item_id": item_id}
+        )
+        logging.debug(f"Response: {response}")
+        forecast_data = response['Forecast']['Predictions']
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(forecast_data['p10'], columns=['Timestamp', 'p10'])
+        df['p50'] = [x['Value'] for x in forecast_data['p50']]
+        df['p90'] = [x['Value'] for x in forecast_data['p90']]
+        return df
+    except Exception as e:
+        logging.error(f"Error querying forecast: {e}")
+        st.error(f"Error querying forecast: {e}")
+        return pd.DataFrame()
 
 st.title('AWS Forecast Data Viewer')
 
-# Retrieve forecast data
-data = get_forecast_data(FORECAST_ARN)
+# Dropdown for selecting stock name (item_id)
+selected_stock = st.selectbox('Select Stock', stock_names)
 
-st.write('Forecast Data')
-st.write(data)
+if selected_stock:
+    # Retrieve forecast data for the selected stock
+    data = get_forecast_data(FORECAST_ARN, selected_stock)
 
-# Plot the data
-st.line_chart(data.set_index('Timestamp'))
+    if not data.empty:
+        st.write(f'Forecast Data for {selected_stock}')
+        st.write(data)
+
+        # Plot the data
+        st.line_chart(data.set_index('Timestamp'))
+    else:
+        st.write('No data available')
