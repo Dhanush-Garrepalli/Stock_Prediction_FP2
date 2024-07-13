@@ -19,7 +19,7 @@ def filter_weekends(df):
     df = df.drop(columns=['Date'])
     return df
 
-def get_forecast(forecast_arn, item_id, date):
+def get_forecast(forecast_arn, item_id, start_date, end_date):
     try:
         # Query the forecast
         forecast_response = forecast_query.query_forecast(
@@ -36,11 +36,11 @@ def get_forecast(forecast_arn, item_id, date):
             df_forecast = pd.DataFrame(forecast_data['p50'])
             # Filter out weekends
             df_forecast = filter_weekends(df_forecast)
-            # Filter the forecast data for the selected date
+            # Filter the forecast data for the selected date range
             df_forecast['Date'] = pd.to_datetime(df_forecast['Timestamp']).dt.date
-            df_forecast = df_forecast[df_forecast['Date'] == date]
+            df_forecast = df_forecast[(df_forecast['Date'] >= start_date) & (df_forecast['Date'] <= end_date)]
             if df_forecast.empty:
-                st.write(f"No predictions available for {item_id} on {date}")
+                st.write(f"No predictions available for {item_id} between {start_date} and {end_date}")
             return df_forecast
         else:
             st.write(f"No 'p50' predictions found for item_id: {item_id}")
@@ -57,19 +57,24 @@ st.title("Forecast Dashboard")
 
 # Select stock from dropdown
 item_id = st.selectbox("Select Stock Name", stocks)
-# Select date from calendar
-selected_date = st.date_input("Select Date")
+# Select start and end date from calendar
+start_date = st.date_input("Select Start Date")
+end_date = st.date_input("Select End Date")
 
 if st.button("Get Forecast"):
-    # Specify the forecast ARN
-    forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
-    df_forecast = get_forecast(forecast_arn, item_id, selected_date)
-    if not df_forecast.empty:
-        st.write(f"Forecast for {item_id} on {selected_date}")
-        st.dataframe(df_forecast)
-        st.download_button(
-            label="Download data as CSV",
-            data=df_forecast.to_csv(index=False).encode('utf-8'),
-            file_name=f'forecast_{item_id}_{selected_date}.csv',
-            mime='text/csv',
-        )
+    # Ensure end_date is not before start_date
+    if start_date > end_date:
+        st.error("End date must be after start date.")
+    else:
+        # Specify the forecast ARN
+        forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
+        df_forecast = get_forecast(forecast_arn, item_id, start_date, end_date)
+        if not df_forecast.empty:
+            st.write(f"Forecast for {item_id} from {start_date} to {end_date}")
+            st.dataframe(df_forecast)
+            st.download_button(
+                label="Download data as CSV",
+                data=df_forecast.to_csv(index=False).encode('utf-8'),
+                file_name=f'forecast_{item_id}_{start_date}_to_{end_date}.csv',
+                mime='text/csv',
+            )
