@@ -48,11 +48,9 @@ forecast_type = st.selectbox("Select Forecast Type", ["Short Term", "Long Term"]
  
 if st.button("Get Forecast"):
     if forecast_type == "Short Term":
-        forecast_arn =  'arn:aws:forecast:ap-south-1:339712801514:dataset-group/Group_16_FP2_dataset_final'
+        forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
     else:
-        forecast_arn =  'arn:aws:forecast:ap-south-1:339712801514:dataset-group/Group_16_FP2_dataset_final'
-
- 
+        forecast_arn = 'arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Forecast'
     df_forecast = get_forecast(forecast_arn, item_id)
     if not df_forecast.empty:
         st.write(f"{forecast_type} Forecast for {item_id}")
