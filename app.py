@@ -14,7 +14,7 @@ FORECAST_ARN = "arn:aws:forecast:ap-south-1:339712801514:forecast/Group16_Foreca
 client = boto3.client('forecastquery', region_name=REGION_NAME)
 
 # Load dataset
-file_path = '/mnt/data/Group-16_FP2_dataset.csv'
+file_path = 'https://github.com/Dhanush-Garrepalli/Stock_Prediction_FP2/blob/main/DhanukaAgritech_Historical_Data.csv'
 dataset = pd.read_csv(file_path)
 
 # Extract unique stock names for the dropdown
