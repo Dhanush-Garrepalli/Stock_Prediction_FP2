@@ -15,10 +15,26 @@ client = boto3.client('forecastquery', region_name=REGION_NAME)
 
 # Load dataset
 file_path = 'https://github.com/Dhanush-Garrepalli/Stock_Prediction_FP2/blob/main/DhanukaAgritech_Historical_Data.csv'
-dataset = pd.read_csv(file_path)
 
-# Extract unique stock names for the dropdown
-stock_names = dataset['stock_name'].unique()
+# Inspect the CSV file
+try:
+    with open(file_path, 'r') as file:
+        sample_data = file.readlines()[:5]
+    st.write('Sample Data from CSV:')
+    st.text(''.join(sample_data))
+except Exception as e:
+    st.error(f"Error reading CSV file: {e}")
+
+# Read the dataset
+try:
+    dataset = pd.read_csv(file_path)
+    stock_names = dataset['stock_name'].unique()
+except pd.errors.ParserError as e:
+    st.error(f"Error parsing CSV file: {e}")
+    st.stop()
+except Exception as e:
+    st.error(f"An unexpected error occurred while reading the CSV file: {e}")
+    st.stop()
 
 def get_forecast_data(forecast_arn, item_id):
     try:
